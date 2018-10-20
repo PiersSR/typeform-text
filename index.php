@@ -90,20 +90,21 @@ $app->group('/login', function() {
 
     $this->get('', function (Request $request, Response $response) {
         return $this->view->render($response, 'login.html.twig', [
-            'tfClient' => $this->get('settings')['keys']['typeform']['client'],
+            'tfClient' => $this->keys['typeform']['client'],
         ]);
     });
 
     $this->get('/callback', function (Request $request, Response $response, $args) {
-        
         $json = json_decode(postData('https://api.typeform.com/oauth/token', [
             'grant_type'    => 'authorization_code',
-            'code'          => $args['code'],
+            'code'          => $request->getQueryParam('code'),
             'client_id'     => $this->keys['typeform']['client'],
             'client_secret' => $this->keys['typeform']['secret'],
-            'redirect_uri'  => 'https://hackupc.dev.guymac.eu/login/callback',
+            'redirect_uri'  => 'http://hackupc.dev.guymac.eu/login/callback',
         ]), true);
         $accessToken = $json['access_token'];
+
+
     });
 
 });
