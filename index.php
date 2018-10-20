@@ -102,11 +102,15 @@ $app->group('/login', function() {
             'client_secret' => $this->keys['typeform']['secret'],
             'redirect_uri'  => 'http://hackupc.dev.guymac.eu/login/callback',
         ], [], 'POST'), true);
+
+        $account = requestAPI('/me', [], $json['access_token']);
         
         $campaignID = uniqid();
         runPDO($this->db, 'INSERT INTO campaigns (id, token) VALUES (:id, :token)', [
             'id'    => $campaignID,
             'token' => $json['access_token'],
+            'name'  => $account['alias'],
+            'email' => $account['email'],
         ]);
 
         return $response->withRedirect("/campaign/new?c=$campaignID");
@@ -118,9 +122,11 @@ $app->group('/campaign', function() {
     
     $this->get('/new', function (Request $request, Response $response) {
         if (empty($request->getQueryParam('c'))) return notFoundHandler($this, $request, $response);
-        
+        $campaign = $request->getQueryParam('c');
+
         return $this->view->render($response, 'forms.html.twig', [
-            'forms' => requestAPI('/forms', [], getAccessToken($this->db, $request->getQueryParam('c'))),
+            'forms'     => requestAPI('/forms', [], getAccessToken($this->db, $campaign)),
+            'campaign'  => runPDO($this->db, 'SELECT * FROM campaigns WHERE id = :id', ['id' => $campaign]),
         ]);
     });
 });
