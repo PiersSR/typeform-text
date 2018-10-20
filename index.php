@@ -172,19 +172,17 @@ $app->group('/campaign', function() {
                 ]);
             }
         }
+
+        foreach ($textees as $textee) {
+            sendText($this->twilio, $textee['phone']);
+        }
+
+        return $response->withStatus(200);
     });
 
 });
 
 $app->run();
-
-/**
- * Sends the next queued question to the user with number $to.
- *
- * @param $client Twilio\Rest\Client An instance of the Twilio client
- * @param $to The number we are sending to
- * @return bool Whether this was successful
- */
 
 function sendText($client, $to) {
     $twilioNumber = "+447449537878";
