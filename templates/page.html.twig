@@ -1,12 +1,24 @@
 <!doctype html>
 <html>
 	<head>
-		{% autoescape false %}{{ dump() }}{% endautoescape %}
+		<meta charset="utf-8">
+		<link rel="stylesheet" href="/css/style.css">
+		<link href="https://fonts.googleapis.com/css?family=Petit+Formal+Script|Roboto+Mono:400,700" rel="stylesheet">
+		<title>typeform-text</title>
 		{% block head %}
 		{% endblock %}
 	</head>
 	<body>
-		{% block content %}
-		{% endblock %}
+		<div class="nav">
+			<div class="logo">
+				<h1 class="typeform">typeform</h1>
+				<h1 class="text">text</h1>
+			</div>
+			<a class="github" href="https://github.com/piersSR/typeform-text"><i class="fa fa-github fa-2x"></i></a>
+		</div>
+		<div class="content">
+			{% block content %}
+			{% endblock %}
+		</div>
 	</body>
 </html>
