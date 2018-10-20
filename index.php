@@ -102,11 +102,23 @@ $app->group('/login', function() {
             'client_secret' => $this->keys['typeform']['secret'],
             'redirect_uri'  => 'http://hackupc.dev.guymac.eu/login/callback',
         ]), true);
-        $accessToken = $json['access_token'];
+        
+        $campaignID = uniqid(),
+        runPDO($this->db, 'INSERT INTO campaigns (id, token) VALUES (:id, :token)' [
+            'id'    => $campaignID,
+            'token' => $json['access_token'],
+        ]);
 
+        return $response->withRedirect("/campaign/new?c=$campaignID");
 
     });
+});
 
+$app->group('/campaign', function() {
+    
+    $this->get('/new', function (Request $request, Response $response) {
+        
+    });
 });
 
 
