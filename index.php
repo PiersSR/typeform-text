@@ -165,3 +165,7 @@ public function runPDO($db, $sql, $params = null) {
 function getAccessToken($db, $campaign) {
     return runPDO($db, 'SELECT token FROM campaigns WHERE id = :id', ['id' => $campaign])->fetch();
 }
+
+function notFoundHandler($app, $request, $response) {
+    return $app->get('notFoundHandler')($request, $response);
+}
