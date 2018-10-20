@@ -120,7 +120,7 @@ $app->group('/campaign', function() {
         if (empty($request->getQueryParam('c'))) return notFoundHandler($this, $request, $response);
         
         return $this->view->render($response, 'forms.html.twig', [
-            'forms' => requestAPI('/forms', [], $request->getQueryParam('c')),
+            'forms' => requestAPI('/forms', [], getAccessToken($this->db, $request->getQueryParam('c'))),
         ]);
     });
 });
@@ -170,7 +170,7 @@ function runPDO($db, $sql, $params = null) {
 }
 
 function getAccessToken($db, $campaign) {
-    return runPDO($db, 'SELECT token FROM campaigns WHERE id = :id', ['id' => $campaign])->fetch();
+    return runPDO($db, 'SELECT token FROM campaigns WHERE id = :id', ['id' => $campaign])->fetchColumn();
 }
 
 function notFoundHandler($app, $request, $response) {
