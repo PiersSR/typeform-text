@@ -183,7 +183,7 @@ $app->post('/twilio/callback', function (Request $request, Response $response) {
         ['from' => $post['From']]
     )->fetchColumn();
 
-    if (FETCH COLUMN NO RESULT BEHAVIOUR) return notFoundHandler($this, $request, $response);
+    // if (FETCH COLUMN NO RESULT BEHAVIOUR) return notFoundHandler($this, $request, $response);
 
     $result = runPDO($this->db, 'UPDATE texts SET answer WHERE texts.textee = :textee', [
         'textee' => $textee]);
@@ -209,16 +209,17 @@ function sendText($client, $to) {
     $sent = runPDO($db, 'SELECT texts.sent FROM texts');   
     
     if (!$sent) {
-    $question = runPDO($db, 'SELECT question.title FROM questions
-                             INNER JOIN texts ON questions.id = texts.question
-                             INNER JOIN textees ON texts.textee = textees.id
-                             WHERE textees.phone = :from', 
-                             ['from' => $from]
-                         )->fetchColumn();
-    
-    runPDO($db, 'UPDATE texts SET sent = 1 WHERE textees.phone = :from', [
-                'from' => $from
-            ]);
+        $question = runPDO($db, 'SELECT question.title FROM questions
+                                 INNER JOIN texts ON questions.id = texts.question
+                                 INNER JOIN textees ON texts.textee = textees.id
+                                 WHERE textees.phone = :from', 
+                                 ['from' => $from]
+                             )->fetchColumn();
+        
+        runPDO($db, 'UPDATE texts SET sent = 1 WHERE textees.phone = :from', [
+                    'from' => $from
+                ]);
+    }
 }
 
 function performRequest($url, $data, $headers, $method) {
