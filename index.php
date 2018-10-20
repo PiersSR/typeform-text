@@ -188,11 +188,12 @@ $app->post('/twilio/callback', function (Request $request, Response $response) {
     $result = runPDO($this->db, 'UPDATE texts SET answer = :answer 
         WHERE texts.textee = :textee 
         AND answer IS NULL
-        LIMIT 1
-        ORDER BY texts.id ASC', [
-        'textee'    => $textee,
-        'answer'    => $post['Body'],
-    ]);
+        ORDER BY texts.id ASC
+        LIMIT 1', [
+            'textee'    => $textee,
+            'answer'    => $post['Body'],
+        ]
+    );
 
     sendText($this->db, $this->twilio, $post['From']);
 
