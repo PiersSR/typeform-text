@@ -154,7 +154,7 @@ function performRequest($url, $data, $headers, $method) {
 }
 
 function requestAPI($uri, $data, $token) {
-    return performRequest("https://api.typeform.com$uri", $data, ["Authorization: Bearer $token"], 'GET');
+    return json_decode(performRequest("https://api.typeform.com$uri", $data, ["Authorization: Bearer $token"], 'GET'), true);
 }
 
 function postData($url, $data) {
