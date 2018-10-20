@@ -76,11 +76,29 @@ $app->post('/twilio/callback', function (Request $request, Response $response) {
     
 });
 
-$app->get('/login', function (Request $request, Response $response) {
-    return $this->view->render($response, 'login.html.twig', [
-        'tfClient' => $this->get('settings')['keys']['typeform']['client'],
-    ]);
+$app->group('/login', function() {
+
+    $this->get('', function (Request $request, Response $response) {
+        return $this->view->render($response, 'login.html.twig', [
+            'tfClient' => $this->get('settings')['keys']['typeform']['client'],
+        ]);
+    });
+
+    $this->get('/callback', function (Request $request, Response $response, $args) {
+        
+        $json = json_decode(postData('https://api.typeform.com/oauth/token', [
+            'grant_type'    => 'authorization_code',
+            'code'          => $args['code'],
+            'client_id'     => $this->keys['typeform']['client'],
+            'client_secret' => $this->keys['typeform']['secret'],
+            'redirect_uri'  => 'https://hackupc.dev.guymac.eu/login/callback',
+        ]), true);
+        $accessToken = $json['access_token'];
+    });
+
 });
+
+
 
 $app->run();
 
@@ -95,8 +113,14 @@ function sendText($client) {
         ]   
     );
 
-function recieveText($client) {
-    
-}
-
+function postData($url, $data) {
+    $options = array(
+        'http' => array(
+            'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+            'method'  => 'POST',
+            'content' => http_build_query($data)
+        )
+    );
+    $context  = stream_context_create($options);
+    return file_get_contents($url, false, $context);
 }
