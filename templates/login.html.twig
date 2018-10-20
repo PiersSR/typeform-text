@@ -1,4 +1,6 @@
 {% extends 'page.html.twig' %}
 
 {% block content %}
+	<div class="tf-login-button"></div>
 	<script type="text/javascript" src="https://public-assets.typeform.com/public/oauthbtn/btn.min.js" name="tf-login-button" data-scope="{your_scopes}" data-redirect_uri="http://hackupc.dev.guymac.eu/login/callback&scope=forms:read" data-state="{state}" data-client_id="{{ typeform.client }}"></script>
+{% endblock %}

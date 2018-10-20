@@ -76,7 +76,9 @@ $app->post('/twilio/callback', function (Request $request, Response $response) {
 });
 
 $app->get('/login', function (Request $request, Response $response) {
-    return $response->render($response, 'login.html.twig', )
+    return $this->view->render($response, 'login.html.twig', [
+        'tfClient' => $this->get('settings')['keys']['typeform']['client'],
+    ]);
 });
 
 $app->run();
