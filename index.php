@@ -11,12 +11,10 @@ spl_autoload_register(function ($class) {
     include __DIR__ . '/src/' . str_replace('\\', DIRECTORY_SEPARATOR, $class) . '.php';
 });
 
-
 // setup Slim
 
 $config['displayErrorDetails'] = true;
 $config['addContentLengthHeader'] = false;
-$config['keys'] = $keys;
 
 $app = new Slim\App(['settings' => $config]);
 
@@ -24,13 +22,26 @@ session_start();
 
 $container = $app->getContainer();
 
+$container['keys'] = $keys;
+
 // Twilio
 
 $container['twilio'] = function ($c) {
     return new Twilio\Rest\Client(
-        $c['settings']['keys']['twilio']['sid'], 
-        $c['settings']['keys']['twilio']['authToken']
+        $c['keys']['twilio']['sid'], 
+        $c['keys']['twilio']['authToken']
     );
+};
+
+// Database
+
+$container['db'] = function ($c) {
+    $db = $c['keys']['db'];
+    $pdo = new PDO('mysql:host=' . $db['host'] . ';dbname=' . $db['dbname'] . ';charset=utf8',
+        $db['user'], $db['pass']);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    return $pdo;
 };
 
 // Twig
@@ -75,9 +86,30 @@ $app->post('/twilio/callback', function (Request $request, Response $response) {
     
 });
 
-$app->get('/login', function (Request $request, Response $response) {
-    return $response->render($response, 'login.html.twig', )
+$app->group('/login', function() {
+
+    $this->get('', function (Request $request, Response $response) {
+        return $this->view->render($response, 'login.html.twig', [
+            'tfClient' => $this->keys['typeform']['client'],
+        ]);
+    });
+
+    $this->get('/callback', function (Request $request, Response $response, $args) {
+        $json = json_decode(postData('https://api.typeform.com/oauth/token', [
+            'grant_type'    => 'authorization_code',
+            'code'          => $request->getQueryParam('code'),
+            'client_id'     => $this->keys['typeform']['client'],
+            'client_secret' => $this->keys['typeform']['secret'],
+            'redirect_uri'  => 'http://hackupc.dev.guymac.eu/login/callback',
+        ]), true);
+        $accessToken = $json['access_token'];
+
+
+    });
+
 });
+
+
 
 $app->run();
 
@@ -91,9 +123,16 @@ function sendText($client) {
             'body' => '',
         ]   
     );
-
-function recieveText($client) {
-    
 }
 
+function postData($url, $data) {
+    $options = array(
+        'http' => array(
+            'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+            'method'  => 'POST',
+            'content' => http_build_query($data)
+        )
+    );
+    $context  = stream_context_create($options);
+    return file_get_contents($url, false, $context);
 }
