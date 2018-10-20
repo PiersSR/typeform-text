@@ -83,7 +83,9 @@ $app->get('/send', function (Request $request, Response $response) {
 
 $app->post('/twilio/callback', function (Request $request, Response $response) {
     $post = $request->getParsedBody();
-    $result = runPDO($db, 'UPDATE texts SET answer = $post['Body']');
+    $result = runPDO($db, 'UPDATE texts SET answer = :answer', [
+        'answer' => $answer,
+    ]);
 });
 
 $app->group('/login', function() {
@@ -190,23 +192,23 @@ function sendText($client, $to) {
     $client->messages->create(  
         [
             'to'   => '+447759945447',
-            'from' => 'typeform text',
+            'from' => 'typeform-text',
             'body' => $question
         ]   
     );
     
-    $sent = runPDO($db, 'SELECT texts.sent INNER JOIN texts.textee ON textees.id WHERE texts.phone == :from', ['from' => $to]);   
+    $sent = runPDO($db, 'SELECT texts.sent FROM texts INNER JOIN texts.textee ON textees.id WHERE texts.phone == :from', ['from' => $to]);   
     
     if (!$sent) {
-    $question = runPDO($db, 'SELECT question.title 
-                             INNER JOIN questions.id ON texts.question
-                             INNER JOIN texts.textee ON textees.id
-                             WHERE textees.phone == :from', [
-                'from' => $to
-            ])->fetchColumn();
+    $question = runPDO($db, 'SELECT question.title FROM questions
+                             INNER JOIN texts ON questions.id = texts.question
+                             INNER JOIN textees ON texts.textee = textees.id
+                             WHERE textees.phone = :from', 
+                             ['from' => $from]
+                         )->fetchColumn();
     
     runPDO($db, 'UPDATE texts SET sent = 1 WHERE textees.phone == :from', [
-                'from' => $to
+                'from' => $from
             ]);
 }
 
