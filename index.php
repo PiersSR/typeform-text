@@ -16,7 +16,6 @@ spl_autoload_register(function ($class) {
 
 $config['displayErrorDetails'] = true;
 $config['addContentLengthHeader'] = false;
-$config['keys'] = $keys;
 
 $app = new Slim\App(['settings' => $config]);
 
@@ -24,12 +23,14 @@ session_start();
 
 $container = $app->getContainer();
 
+$container['keys'] = $keys;
+
 // Twilio
 
 $container['twilio'] = function ($c) {
     return new Twilio\Rest\Client(
-        $c['settings']['keys']['twilio']['sid'], 
-        $c['settings']['keys']['twilio']['authToken']
+        $c['keys']['twilio']['sid'], 
+        $c['keys']['twilio']['authToken']
     );
 };
 
