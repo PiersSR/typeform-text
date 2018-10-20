@@ -59,6 +59,7 @@ $container['notFoundHandler'] = function ($c) {
         return $c->view->render($response, '404.html.twig')->withStatus(404);
     };
 };
+
 // Routes
 
 $app->get('/', function (Request $request, Response $response) {
@@ -72,6 +73,10 @@ $app->get('/send', function (Request $request, Response $response) {
 $app->post('/twilio/callback', function (Request $request, Response $response) {
     $post = $request->getParsedBody();
     
+});
+
+$app->get('/login', function (Request $request, Response $response) {
+    return $response->render($response, 'login.html.twig', )
 });
 
 $app->run();
