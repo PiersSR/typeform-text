@@ -74,7 +74,7 @@ $container['notFoundHandler'] = function ($c) {
 // Routes
 
 $app->get('/', function (Request $request, Response $response) {
-
+    return $response->withRedirect('/login');
 });
 
 $app->get('/send', function (Request $request, Response $response) {
@@ -196,31 +196,27 @@ $app->post('/twilio/callback', function (Request $request, Response $response) {
 $app->run();
 
 function sendText($client, $to) {
-    $twilioNumber = "+447449537878";
-    
-    $client->messages->create(  
-        [
-            'to'   => '+447759945447',
-            'from' => 'typeform-text',
-            'body' => $question
-        ]   
-    );
-    
-    $sent = runPDO($db, 'SELECT texts.sent FROM texts');   
-    
-    if (!$sent) {
-        $question = runPDO($db, 'SELECT question.title FROM questions
-                                 INNER JOIN texts ON questions.id = texts.question
-                                 INNER JOIN textees ON texts.textee = textees.id
-                                 WHERE textees.phone = :from', 
-                                 ['from' => $from]
-                             )->fetchColumn();
+   
+    $question = runPDO($db, 'SELECT question.title FROM questions
+                             INNER JOIN texts ON questions.id = texts.question
+                             INNER JOIN textees ON texts.textee = textees.id
+                             WHERE textees.phone = :from', 
+                             ['from' => $from]
+                         )->fetchColumn();
+
+    if (!question) return;
+
+    $twilioNumber = '+447449537878';
+
+    $client->messages->create([
+        'to'   => $to,
+        'from' => 'typeform-text',
+        'body' => $question,
+    ]);
         
-        runPDO($db, 'UPDATE texts SET sent = 1 WHERE textees.phone = :from', [
-                    'from' => $from
-                ]);
-    }
+    runPDO($db, 'UPDATE texts SET sent = 1 WHERE textees.phone = :from', ['from' => $from]);
 }
+
 
 function performRequest($url, $data, $headers, $method) {
     $options = array(
