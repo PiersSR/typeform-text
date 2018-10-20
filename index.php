@@ -101,7 +101,7 @@ $app->group('/login', function() {
             'client_id'     => $this->keys['typeform']['client'],
             'client_secret' => $this->keys['typeform']['secret'],
             'redirect_uri'  => 'http://hackupc.dev.guymac.eu/login/callback',
-        ]), true);
+        ], [], 'POST'), true);
         
         $campaignID = uniqid(),
         runPDO($this->db, 'INSERT INTO campaigns (id, token) VALUES (:id, :token)' [
@@ -137,16 +137,21 @@ function sendText($client) {
     );
 }
 
-function postData($url, $data) {
+function postData($url, $data, $headers, $method) {
     $options = array(
         'http' => array(
-            'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
-            'method'  => 'POST',
+            'header'  => array_merge(['Content-type: application/x-www-form-urlencoded'], $headers),
+
+            'method'  => $method,
             'content' => http_build_query($data)
         )
     );
     $context  = stream_context_create($options);
     return file_get_contents($url, false, $context);
+}
+
+function requestAPI($uri, $data, $token) {
+    return postData("https://api.typeform.com$uri", $data, ["Authorization: Bearer $token"], 'GET');
 }
 
 public function runPDO($db, $sql, $params = null) {
