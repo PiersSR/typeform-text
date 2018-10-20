@@ -148,3 +148,11 @@ function postData($url, $data) {
     $context  = stream_context_create($options);
     return file_get_contents($url, false, $context);
 }
+
+public function runPDO($db, $sql, $params = null) {
+    if (!$params) return $db->query($sql);
+
+    $q = $db->prepare($sql);
+    $q->execute($params);
+    return $q;
+}
