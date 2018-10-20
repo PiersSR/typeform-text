@@ -1,0 +1,7 @@
+{% extends 'page.html.twig' %}
+
+{% block content %}
+	{% for form in forms.items %}
+		<a title="{{ form.item }}" href="{{ form.self.href }}">{{ form.title }}</a>
+	{% endfor %}
+{% endblock %}

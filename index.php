@@ -117,7 +117,11 @@ $app->group('/login', function() {
 $app->group('/campaign', function() {
     
     $this->get('/new', function (Request $request, Response $response) {
+        if (empty($request->getQueryParam('c'))) return notFoundHandler($this, $request, $response);
         
+        return $this->view->render($response, 'forms.html.twig', [
+            'forms' => requestAPI('/forms', [], $request->getQueryParam('c')),
+        ];
     });
 });
 
