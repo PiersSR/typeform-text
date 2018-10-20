@@ -114,7 +114,6 @@ $app->group('/login', function() {
         ]);
 
         return $response->withRedirect("/campaign/new?c=$campaignID");
-
     });
 });
 
@@ -129,9 +128,50 @@ $app->group('/campaign', function() {
             'campaign'  => runPDO($this->db, 'SELECT * FROM campaigns WHERE id = :id', ['id' => $campaign])->fetch(),
         ]);
     });
+
+    $this->post('/new', function (Request $request, Response $response) {
+        $post = $request->getParsedBody();
+        if (empty($post['campaign']) || empty($post['form']) || empty($post['numbers'])) return notFoundHandler($this, $request, $response);
+        
+        $form = requestAPI('/forms/' . $post['form'], [], getAccessToken($this->db, $post['campaign']));
+        runPDO($this->db, 'UPDATE campaigns SET title = :title WHERE campaign = :campaign', [
+            'title'     => $form['title'],
+            'campaign'  => $post['campaign'],
+        ]);
+
+        $numbers = [];
+        for ($number : $post['numbers']) {
+            $id = uniqid();
+            $textees[] = [
+                'id' => $id,
+                'phone' $number,
+            ];
+            runPDO($this->db, 'INSERT INTO textees VALUES (:id, :phone)' [
+                'id'    => $id,
+                'phone' => $number,
+            ]);
+        }
+
+        for ($field : $form['fields']) {
+            $id = uniqid();
+            runPDO($this->db, 'INSERT INTO questions VALUES (:id, :title, :type, :campaign)', [
+                'id'        => $id,
+                'title'     => $field['title'],
+                'type'      => $field['type'],
+                'campaign'  => $post['campaign'],
+            ]);
+
+            for ($textee : $textees) {
+                runPDO($this->db, 'INSERT INTO texts (id, textee, question) VALUES (:id, :textee, :question)', [
+                    'id'        => $id,
+                    'textee'    => $textee['id'],
+                    'question'  => $id,
+                ]);
+            }
+        }
+    });
+
 });
-
-
 
 $app->run();
 
