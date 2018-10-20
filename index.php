@@ -131,8 +131,8 @@ function sendText($client) {
     $client->messages->create(
         '+447759945447',
         [
-            'from' => '',
-            'body' => '',
+            'from' => 'typeform text',
+            'body' => "$body",
         ]   
     );
 }
@@ -155,4 +155,8 @@ public function runPDO($db, $sql, $params = null) {
     $q = $db->prepare($sql);
     $q->execute($params);
     return $q;
+}
+
+function receiveText($client, $db) {
+    $db = $pdo->$query('SELECT form FROM questions')->fetchAll(PDO::FETCH_GROUP);
 }
