@@ -81,12 +81,6 @@ $app->get('/send', function (Request $request, Response $response) {
     sendText($this->twilio);
 });
 
-$app->post('/twilio/callback', function (Request $request, Response $response) {
-    $post = $request->getParsedBody();
-    $result = runPDO($db, 'UPDATE texts SET answer = :answer', [
-        'answer' => $answer,
-    ]);
-});
 
 $app->group('/login', function() {
 
@@ -182,6 +176,23 @@ $app->group('/campaign', function() {
 
 });
 
+$app->post('/twilio/callback', function (Request $request, Response $response) {
+    $post = $request->getParsedBody();
+
+    $textee = runPDO($this->db, 'SELECT textees.id FROM textees WHERE textees.phone = :from', 
+        ['from' => $post['From']]
+    )->fetchColumn();
+
+    if (FETCH COLUMN NO RESULT BEHAVIOUR) return notFoundHandler($this, $request, $response);
+
+    $result = runPDO($this->db, 'UPDATE texts SET answer WHERE texts.textee = :textee', [
+        'textee' => $textee]);
+
+    sendText($this->twilio, $post['From']);
+
+
+});
+
 $app->run();
 
 function sendText($client, $to) {
@@ -195,7 +206,7 @@ function sendText($client, $to) {
         ]   
     );
     
-    $sent = runPDO($db, 'SELECT texts.sent FROM texts INNER JOIN texts.textee ON textees.id WHERE texts.phone == :from', ['from' => $to]);   
+    $sent = runPDO($db, 'SELECT texts.sent FROM texts');   
     
     if (!$sent) {
     $question = runPDO($db, 'SELECT question.title FROM questions
@@ -205,7 +216,7 @@ function sendText($client, $to) {
                              ['from' => $from]
                          )->fetchColumn();
     
-    runPDO($db, 'UPDATE texts SET sent = 1 WHERE textees.phone == :from', [
+    runPDO($db, 'UPDATE texts SET sent = 1 WHERE textees.phone = :from', [
                 'from' => $from
             ]);
 }
