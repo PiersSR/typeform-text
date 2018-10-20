@@ -103,8 +103,8 @@ $app->group('/login', function() {
             'redirect_uri'  => 'http://hackupc.dev.guymac.eu/login/callback',
         ], [], 'POST'), true);
         
-        $campaignID = uniqid(),
-        runPDO($this->db, 'INSERT INTO campaigns (id, token) VALUES (:id, :token)' [
+        $campaignID = uniqid();
+        runPDO($this->db, 'INSERT INTO campaigns (id, token) VALUES (:id, :token)', [
             'id'    => $campaignID,
             'token' => $json['access_token'],
         ]);
@@ -121,7 +121,7 @@ $app->group('/campaign', function() {
         
         return $this->view->render($response, 'forms.html.twig', [
             'forms' => requestAPI('/forms', [], $request->getQueryParam('c')),
-        ];
+        ]);
     });
 });
 
@@ -158,7 +158,7 @@ function requestAPI($uri, $data, $token) {
     return postData("https://api.typeform.com$uri", $data, ["Authorization: Bearer $token"], 'GET');
 }
 
-public function runPDO($db, $sql, $params = null) {
+function runPDO($db, $sql, $params = null) {
     if (!$params) return $db->query($sql);
 
     $q = $db->prepare($sql);
