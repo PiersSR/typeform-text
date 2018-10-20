@@ -183,7 +183,7 @@ $app->post('/twilio/callback', function (Request $request, Response $response) {
         ['from' => $post['From']]
     )->fetchColumn();
 
-    if (FETCH COLUMN NO RESULT BEHAVIOUR) return notFoundHandler($this, $request, $response);
+    if (!$textee == false) return notFoundHandler($this, $request, $response);
 
     $result = runPDO($this->db, 'UPDATE texts SET answer WHERE texts.textee = :textee', [
         'textee' => $textee]);
