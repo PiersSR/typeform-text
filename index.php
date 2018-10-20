@@ -101,27 +101,78 @@ $app->group('/login', function() {
             'client_id'     => $this->keys['typeform']['client'],
             'client_secret' => $this->keys['typeform']['secret'],
             'redirect_uri'  => 'http://hackupc.dev.guymac.eu/login/callback',
-        ]), true);
+        ], [], 'POST'), true);
+
+        $account = requestAPI('/me', [], $json['access_token']);
         
-        $campaignID = uniqid(),
-        runPDO($this->db, 'INSERT INTO campaigns (id, token) VALUES (:id, :token)' [
+        $campaignID = uniqid();
+        runPDO($this->db, 'INSERT INTO campaigns (id, token, user, email) VALUES (:id, :token, :user, :email)', [
             'id'    => $campaignID,
             'token' => $json['access_token'],
+            'user'  => $account['alias'],
+            'email' => $account['email'],
         ]);
 
         return $response->withRedirect("/campaign/new?c=$campaignID");
-
     });
 });
 
 $app->group('/campaign', function() {
     
     $this->get('/new', function (Request $request, Response $response) {
-        
+        if (empty($request->getQueryParam('c'))) return notFoundHandler($this, $request, $response);
+        $campaign = $request->getQueryParam('c');
+
+        return $this->view->render($response, 'createCampaign.html.twig', [
+            'forms'     => requestAPI('/forms', [], getAccessToken($this->db, $campaign)),
+            'campaign'  => runPDO($this->db, 'SELECT * FROM campaigns WHERE id = :id', ['id' => $campaign])->fetch(),
+        ]);
     });
+
+    $this->post('/new', function (Request $request, Response $response) {
+        $post = $request->getParsedBody();
+        if (empty($post['campaign']) || empty($post['form']) || empty($post['numbers'])) return notFoundHandler($this, $request, $response);
+        
+        $form = requestAPI('/forms/' . $post['form'], [], getAccessToken($this->db, $post['campaign']));
+        runPDO($this->db, 'UPDATE campaigns SET title = :title WHERE id = :id', [
+            'title'     => $form['title'],
+            'id'  => $post['campaign'],
+        ]);
+
+        $numbers = [];
+        foreach (explode(',', $post['numbers']) as $number) {
+            $id = uniqid();
+            $textees[] = [
+                'id'    => $id,
+                'phone' => $number,
+            ];
+            print_r(explode('\n', $post['numbers']));
+            runPDO($this->db, 'INSERT INTO textees VALUES (:id, :phone)', [
+                'id'    => $id,
+                'phone' => $number,
+            ]);
+        }
+
+        foreach ($form['fields'] as $field) {
+            $id = uniqid();
+            runPDO($this->db, 'INSERT INTO questions VALUES (:id, :title, :type, :campaign)', [
+                'id'        => $id,
+                'title'     => $field['title'],
+                'type'      => $field['type'],
+                'campaign'  => $post['campaign'],
+            ]);
+
+            foreach ($textees as $textee) {
+                runPDO($this->db, 'INSERT INTO texts (id, textee, question) VALUES (:id, :textee, :question)', [
+                    'id'        => uniqid(),
+                    'textee'    => $textee['id'],
+                    'question'  => $id,
+                ]);
+            }
+        }
+    });
+
 });
-
-
 
 $app->run();
 
@@ -137,11 +188,11 @@ function sendText($client) {
     );
 }
 
-function postData($url, $data) {
+function performRequest($url, $data, $headers, $method) {
     $options = array(
         'http' => array(
-            'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
-            'method'  => 'POST',
+            'header'  => array_merge([], $headers),
+            'method'  => $method,
             'content' => http_build_query($data)
         )
     );
@@ -149,7 +200,15 @@ function postData($url, $data) {
     return file_get_contents($url, false, $context);
 }
 
-public function runPDO($db, $sql, $params = null) {
+function requestAPI($uri, $data, $token) {
+    return json_decode(performRequest("https://api.typeform.com$uri", $data, ["Authorization: Bearer $token"], 'GET'), true);
+}
+
+function postData($url, $data) {
+    return performRequest($url, $data, ['Content-type: application/x-www-form-urlencoded'], 'POST');
+}
+
+function runPDO($db, $sql, $params = null) {
     if (!$params) return $db->query($sql);
 
     $q = $db->prepare($sql);
@@ -157,6 +216,10 @@ public function runPDO($db, $sql, $params = null) {
     return $q;
 }
 
-function receiveText($client, $db) {
-    $db = $pdo->$query('SELECT form FROM questions')->fetchAll(PDO::FETCH_GROUP);
+function getAccessToken($db, $campaign) {
+    return runPDO($db, 'SELECT token FROM campaigns WHERE id = :id', ['id' => $campaign])->fetchColumn();
+}
+
+function notFoundHandler($app, $request, $response) {
+    return $app->get('notFoundHandler')($request, $response);
 }
