@@ -134,25 +134,26 @@ $app->group('/campaign', function() {
         if (empty($post['campaign']) || empty($post['form']) || empty($post['numbers'])) return notFoundHandler($this, $request, $response);
         
         $form = requestAPI('/forms/' . $post['form'], [], getAccessToken($this->db, $post['campaign']));
-        runPDO($this->db, 'UPDATE campaigns SET title = :title WHERE campaign = :campaign', [
+        runPDO($this->db, 'UPDATE campaigns SET title = :title WHERE id = :id', [
             'title'     => $form['title'],
-            'campaign'  => $post['campaign'],
+            'id'  => $post['campaign'],
         ]);
 
         $numbers = [];
-        for ($number : $post['numbers']) {
+        foreach (explode(',', $post['numbers']) as $number) {
             $id = uniqid();
             $textees[] = [
-                'id' => $id,
-                'phone' $number,
+                'id'    => $id,
+                'phone' => $number,
             ];
-            runPDO($this->db, 'INSERT INTO textees VALUES (:id, :phone)' [
+            print_r(explode('\n', $post['numbers']));
+            runPDO($this->db, 'INSERT INTO textees VALUES (:id, :phone)', [
                 'id'    => $id,
                 'phone' => $number,
             ]);
         }
 
-        for ($field : $form['fields']) {
+        foreach ($form['fields'] as $field) {
             $id = uniqid();
             runPDO($this->db, 'INSERT INTO questions VALUES (:id, :title, :type, :campaign)', [
                 'id'        => $id,
@@ -161,9 +162,9 @@ $app->group('/campaign', function() {
                 'campaign'  => $post['campaign'],
             ]);
 
-            for ($textee : $textees) {
+            foreach ($textees as $textee) {
                 runPDO($this->db, 'INSERT INTO texts (id, textee, question) VALUES (:id, :textee, :question)', [
-                    'id'        => $id,
+                    'id'        => uniqid(),
                     'textee'    => $textee['id'],
                     'question'  => $id,
                 ]);
