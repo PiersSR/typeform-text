@@ -137,7 +137,6 @@ $app->group('/campaign', function() {
                 'id'    => $id,
                 'phone' => $number,
             ];
-            print_r(explode('\n', $post['numbers']));
             runPDO($this->db, 'INSERT INTO textees VALUES (:id, :phone)', [
                 'id'    => $id,
                 'phone' => $number,
@@ -166,7 +165,13 @@ $app->group('/campaign', function() {
             sendText($this->db, $this->twilio, $textee['phone']);
         }
 
-        return $response->withStatus(200);
+        return $response->withRedirect('/campaign/' . $post['campaign']);
+    });
+
+    $this->get('/{campaign}', function (Request $request, Response $response, $args) {
+        return $this->view->render($response, 'campaign.html.twig', [
+            'campaign'  => $args['campaign'],
+        ]);
     });
 
 });
@@ -178,38 +183,40 @@ $app->post('/twilio/callback', function (Request $request, Response $response) {
         ['from' => $post['From']]
     )->fetchColumn();
 
-    if (!$textee == false) return notFoundHandler($this, $request, $response);
+    if (!$textee) return notFoundHandler($this, $request, $response);
 
     $result = runPDO($this->db, 'UPDATE texts SET answer WHERE texts.textee = :textee', [
         'textee' => $textee]);
 
     sendText($this->db, $this->twilio, $post['From']);
 
-
+    return;
 });
 
 $app->run();
 
 function sendText($db, $client, $to) {
    
-    $question = runPDO($db, 'SELECT question.title FROM questions
+    $question = runPDO($db, 'SELECT questions.title, texts.id FROM questions
                              INNER JOIN texts ON questions.id = texts.question
                              INNER JOIN textees ON texts.textee = textees.id
-                             WHERE textees.phone = :from', 
-                             ['from' => $from]
-                         )->fetchColumn();
+                             WHERE textees.phone = :phone', 
+                             ['phone' => $to]
+                         )->fetchAll();
 
-    if (!question) return;
+    if (count($question) == 0) return;
+    $question = $question[0];
 
     $twilioNumber = '+447449537878';
 
-    $client->messages->create([
-        'to'   => $to,
-        'from' => 'typeform-text',
-        'body' => $question,
-    ]);
+    $client->messages->create(
+        $to, [
+            'from' => $twilioNumber,
+            'body' => $question['title'],
+        ]
+    );
         
-    runPDO($db, 'UPDATE texts SET sent = 1 WHERE textees.phone = :from', ['from' => $from]);
+    runPDO($db, 'UPDATE texts SET sent = 1 WHERE id = :id', ['id' => $question['id']]);
 }
 
 
