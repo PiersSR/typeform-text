@@ -141,11 +141,10 @@ function sendText($client) {
     );
 }
 
-function postData($url, $data, $headers, $method) {
+function performRequest($url, $data, $headers, $method) {
     $options = array(
         'http' => array(
-            'header'  => array_merge(['Content-type: application/x-www-form-urlencoded'], $headers),
-
+            'header'  => array_merge([], $headers),
             'method'  => $method,
             'content' => http_build_query($data)
         )
@@ -155,7 +154,11 @@ function postData($url, $data, $headers, $method) {
 }
 
 function requestAPI($uri, $data, $token) {
-    return postData("https://api.typeform.com$uri", $data, ["Authorization: Bearer $token"], 'GET');
+    return performRequest("https://api.typeform.com$uri", $data, ["Authorization: Bearer $token"], 'GET');
+}
+
+function postData($url, $data) {
+    return performRequest($url, $data, ['Content-type: application/x-www-form-urlencoded'], 'POST');
 }
 
 function runPDO($db, $sql, $params = null) {
