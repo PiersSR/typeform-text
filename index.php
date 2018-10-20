@@ -185,12 +185,18 @@ $app->post('/twilio/callback', function (Request $request, Response $response) {
 
     if (!$textee) return notFoundHandler($this, $request, $response);
 
-    $result = runPDO($this->db, 'UPDATE texts SET answer WHERE texts.textee = :textee', [
-        'textee' => $textee]);
+    $result = runPDO($this->db, 'UPDATE texts SET answer = :answer 
+        WHERE texts.textee = :textee 
+        AND answer IS NULL
+        LIMIT 1
+        ORDER BY texts.id ASC', [
+        'textee'    => $textee,
+        'answer'    => $post['Body'],
+    ]);
 
     sendText($this->db, $this->twilio, $post['From']);
 
-    return;
+    return $response->withStatus(200);
 });
 
 $app->run();
@@ -200,7 +206,8 @@ function sendText($db, $client, $to) {
     $question = runPDO($db, 'SELECT questions.title, texts.id FROM questions
                              INNER JOIN texts ON questions.id = texts.question
                              INNER JOIN textees ON texts.textee = textees.id
-                             WHERE textees.phone = :phone', 
+                             WHERE textees.phone = :phone
+                             AND texts.sent = 0', 
                              ['phone' => $to]
                          )->fetchAll();
 
