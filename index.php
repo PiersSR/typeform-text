@@ -5,21 +5,33 @@ use Psr\Http\Message\ResponseInterface as Response;
 
 // load classes
 
+require __DIR__ . DIRECTORY_SEPARATOR . 'keys.php';
 require __DIR__ . '/vendor/autoload.php';
 spl_autoload_register(function ($class) {
     include __DIR__ . '/src/' . str_replace('\\', DIRECTORY_SEPARATOR, $class) . '.php';
 });
 
+
 // setup Slim
 
 $config['displayErrorDetails'] = true;
 $config['addContentLengthHeader'] = false;
+$config['keys'] = $keys;
 
 $app = new Slim\App(['settings' => $config]);
 
 session_start();
 
 $container = $app->getContainer();
+
+// Twilio
+
+$container['twilio'] = function ($c) {
+    return new Twilio\Rest\Client(
+        $c['settings']['keys']['twilio']['sid'], 
+        $c['settings']['keys']['twilio']['authToken']
+    );
+};
 
 // Twig
 
@@ -50,7 +62,33 @@ $container['notFoundHandler'] = function ($c) {
 // Routes
 
 $app->get('/', function (Request $request, Response $response) {
+
+});
+
+$app->get('/send', function (Request $request, Response $response) {
+    sendText($this->twilio);
+});
+
+$app->post('/twilio/callback', function (Request $request, Response $response) {
+    $post = $request->getParsedBody();
     
 });
 
 $app->run();
+
+function sendText($client) {
+    $twilioNumber = "+447449537878";
+
+    $client->messages->create(
+        '+447759945447',
+        [
+            'from' => '',
+            'body' => '',
+        ]   
+    );
+
+function recieveText($client) {
+    
+}
+
+}
