@@ -1,6 +1,7 @@
 <!doctype html>
 <html>
 	<head>
+		{% autoescape false %}{{ dump() }}{% endautoescape %}
 		{% block head %}
 		{% endblock %}
 	</head>
