@@ -52,3 +52,5 @@ $container['notFoundHandler'] = function ($c) {
 $app->get('/', function (Request $request, Response $response) {
     
 });
+
+$app->run();
