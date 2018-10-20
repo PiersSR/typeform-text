@@ -83,7 +83,7 @@ $app->get('/send', function (Request $request, Response $response) {
 
 $app->post('/twilio/callback', function (Request $request, Response $response) {
     $post = $request->getParsedBody();
-    
+    $result = runPDO($db, 'UPDATE texts SET answer = $post['Body']');
 });
 
 $app->group('/login', function() {
@@ -176,16 +176,38 @@ $app->group('/campaign', function() {
 
 $app->run();
 
-function sendText($client) {
-    $twilioNumber = "+447449537878";
+/**
+ * Sends the next queued question to the user with number $to.
+ *
+ * @param $client Twilio\Rest\Client An instance of the Twilio client
+ * @param $to The number we are sending to
+ * @return bool Whether this was successful
+ */
 
-    $client->messages->create(
-        '+447759945447',
+function sendText($client, $to) {
+    $twilioNumber = "+447449537878";
+    
+    $client->messages->create(  
         [
+            'to'   => '+447759945447',
             'from' => 'typeform text',
-            'body' => "$body",
+            'body' => $question
         ]   
     );
+    
+    $sent = runPDO($db, 'SELECT texts.sent INNER JOIN texts.textee ON textees.id WHERE texts.phone == :from', ['from' => $to]);   
+    
+    if (!$sent) {
+    $question = runPDO($db, 'SELECT question.title 
+                             INNER JOIN questions.id ON texts.question
+                             INNER JOIN texts.textee ON textees.id
+                             WHERE textees.phone == :from', [
+                'from' => $to
+            ])->fetchColumn();
+    
+    runPDO($db, 'UPDATE texts SET sent = 1 WHERE textees.phone == :from', [
+                'from' => $to
+            ]);
 }
 
 function performRequest($url, $data, $headers, $method) {
@@ -214,12 +236,4 @@ function runPDO($db, $sql, $params = null) {
     $q = $db->prepare($sql);
     $q->execute($params);
     return $q;
-}
-
-function getAccessToken($db, $campaign) {
-    return runPDO($db, 'SELECT token FROM campaigns WHERE id = :id', ['id' => $campaign])->fetchColumn();
-}
-
-function notFoundHandler($app, $request, $response) {
-    return $app->get('notFoundHandler')($request, $response);
 }
