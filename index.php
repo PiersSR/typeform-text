@@ -161,3 +161,7 @@ public function runPDO($db, $sql, $params = null) {
     $q->execute($params);
     return $q;
 }
+
+function getAccessToken($db, $campaign) {
+    return runPDO($db, 'SELECT token FROM campaigns WHERE id = :id', ['id' => $campaign])->fetch();
+}
