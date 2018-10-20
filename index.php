@@ -77,11 +77,6 @@ $app->get('/', function (Request $request, Response $response) {
     return $response->withRedirect('/login');
 });
 
-$app->get('/send', function (Request $request, Response $response) {
-    sendText($this->twilio);
-});
-
-
 $app->group('/login', function() {
 
     $this->get('', function (Request $request, Response $response) {
@@ -168,7 +163,7 @@ $app->group('/campaign', function() {
         }
 
         foreach ($textees as $textee) {
-            sendText($this->twilio, $textee['phone']);
+            sendText($this->db, $this->twilio, $textee['phone']);
         }
 
         return $response->withStatus(200);
@@ -188,14 +183,14 @@ $app->post('/twilio/callback', function (Request $request, Response $response) {
     $result = runPDO($this->db, 'UPDATE texts SET answer WHERE texts.textee = :textee', [
         'textee' => $textee]);
 
-    sendText($this->twilio, $post['From']);
+    sendText($this->db, $this->twilio, $post['From']);
 
 
 });
 
 $app->run();
 
-function sendText($client, $to) {
+function sendText($db, $client, $to) {
    
     $question = runPDO($db, 'SELECT question.title FROM questions
                              INNER JOIN texts ON questions.id = texts.question
@@ -247,5 +242,5 @@ function runPDO($db, $sql, $params = null) {
 }
 
 function getAccessToken($db, $campaign) {
-    return runPDO($db, 'SELECT token FROM campaigns WHERE id = :id', ['id' => $campaign])->fetch();
+    return runPDO($db, 'SELECT token FROM campaigns WHERE id = :id', ['id' => $campaign])->fetchColumn();
 }
