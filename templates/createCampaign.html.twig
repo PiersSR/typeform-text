@@ -1,7 +1,7 @@
 {% extends 'page.html.twig' %}
 
 {% block content %}
-	<h1>Hi, {{ campaign.name }}</h1>
+	<h1>Hi, {{ campaign.user }}</h1>
 	<h2>Create new campaign</h2>
 	<form action="/campaign/new" method="post">
 		<select name="form">
@@ -12,8 +12,4 @@
 		<textarea name="numbers" rows="5"></textarea>
 		<input type="submit" value="Create">
 	</form>
-	{% for form in forms.items %}
-
-		<a title="{{ form.id }}" href="{{ form.self.href }}">{{ form.title }}</a>
-	{% endfor %}
 {% endblock %}

@@ -106,10 +106,10 @@ $app->group('/login', function() {
         $account = requestAPI('/me', [], $json['access_token']);
         
         $campaignID = uniqid();
-        runPDO($this->db, 'INSERT INTO campaigns (id, token) VALUES (:id, :token)', [
+        runPDO($this->db, 'INSERT INTO campaigns (id, token, user, email) VALUES (:id, :token, :user, :email)', [
             'id'    => $campaignID,
             'token' => $json['access_token'],
-            'name'  => $account['alias'],
+            'user'  => $account['alias'],
             'email' => $account['email'],
         ]);
 
@@ -124,9 +124,9 @@ $app->group('/campaign', function() {
         if (empty($request->getQueryParam('c'))) return notFoundHandler($this, $request, $response);
         $campaign = $request->getQueryParam('c');
 
-        return $this->view->render($response, 'forms.html.twig', [
+        return $this->view->render($response, 'createCampaign.html.twig', [
             'forms'     => requestAPI('/forms', [], getAccessToken($this->db, $campaign)),
-            'campaign'  => runPDO($this->db, 'SELECT * FROM campaigns WHERE id = :id', ['id' => $campaign]),
+            'campaign'  => runPDO($this->db, 'SELECT * FROM campaigns WHERE id = :id', ['id' => $campaign])->fetch(),
         ]);
     });
 });
