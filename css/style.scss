@@ -30,14 +30,16 @@ body {
 			line-height: 0.5;
 			position: fixed;
 			bottom: 0;
+			margin-left: 70px;
 
 			.typeform {
 				color: #999;
 			}
 
 			.text {
-				font-family: "Petit Formal Script", Times New Roman, serif;
+				font-family: "Charmonman", Times New Roman, serif;
 				color: $neonPink;
+				font-size: 1.3em;
 			}
 		}
 	}	

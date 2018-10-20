@@ -8,3 +8,5 @@ keys\.php
 *.css
 
 *.map
+
+\.idea/
