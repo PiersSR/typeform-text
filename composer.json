@@ -3,6 +3,7 @@
         "slim/slim": "^3.9",
         "slim/twig-view": "^2.3",
         "myclabs/php-enum": "^1.6",
-      	"ext-json": "*"
+      	"ext-json": "*",
+        "twilio/sdk": "^5.24"
     }
 }
