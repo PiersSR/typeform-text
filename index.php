@@ -162,7 +162,7 @@ $app->group('/campaign', function() {
         }
 
         foreach ($textees as $textee) {
-            sendText($this->db, $this->twilio, $textee['phone']);
+            sendNextText($this->db, $this->twilio, $textee['phone']);
         }
 
         return $response->withRedirect('/campaign/' . $post['campaign']);
@@ -195,14 +195,14 @@ $app->post('/twilio/callback', function (Request $request, Response $response) {
         ]
     );
 
-    sendText($this->db, $this->twilio, $post['From']);
+    sendNextText($this->db, $this->twilio, $post['From']);
 
     return $response->withStatus(200);
 });
 
 $app->run();
 
-function sendText($db, $client, $to) {
+function sendNextText($db, $client, $to) {
    
     $question = runPDO($db, 'SELECT questions.title, texts.id FROM questions
                              INNER JOIN texts ON questions.id = texts.question
@@ -215,16 +215,20 @@ function sendText($db, $client, $to) {
     if (count($question) == 0) return;
     $question = $question[0];
 
+    sendText($client, $to, $question['title']);
+
+    runPDO($db, 'UPDATE texts SET sent = 1 WHERE id = :id', ['id' => $question['id']]);
+}
+
+function sendText($client, $to, $body) {
     $twilioNumber = '+447449537878';
 
     $client->messages->create(
         $to, [
             'from' => $twilioNumber,
-            'body' => $question['title'],
+            'body' => $body,
         ]
     );
-        
-    runPDO($db, 'UPDATE texts SET sent = 1 WHERE id = :id', ['id' => $question['id']]);
 }
 
 
