@@ -125,9 +125,11 @@ $app->group('/campaign', function() {
         if (empty($post['campaign']) || empty($post['form']) || empty($post['numbers'])) return notFoundHandler($this, $request, $response);
         
         $form = requestAPI('/forms/' . $post['form'], [], getAccessToken($this->db, $post['campaign']));
-        runPDO($this->db, 'UPDATE campaigns SET title = :title WHERE id = :id', [
-            'title'     => $form['title'],
-            'id'  => $post['campaign'],
+        $key = generateKey();
+        runPDO($this->db, 'UPDATE campaigns SET title = :title, keystr = :key WHERE id = :id', [
+            'title' => $form['title'],
+            'key'   => $key,
+            'id'    => $post['campaign'],
         ]);
 
         $numbers = [];
@@ -162,20 +164,43 @@ $app->group('/campaign', function() {
         }
 
         foreach ($textees as $textee) {
+            sendText($this->twilio, $textee['phone'], 'Hey there! Mind answering a few questions? This survey\'s called ' . $form['title'] . '. If you\'d rather not, just don\'t reply to the first question - we won\'t bother you again. :)');
+            sendText($this->twilio, $textee['phone'], 'You can also complete this survey online: ' . $form['_links']['display']);
             sendNextText($this->db, $this->twilio, $textee['phone']);
         }
 
-        return $response->withRedirect('/campaign/' . $post['campaign']);
+        return $response->withRedirect('/campaign/' . $post['campaign'] . "?k=$key");
     });
 
-    $this->get('/{campaign}', function (Request $request, Response $response, $args) {
-        if (count(runPDO($this->db, 'SELECT id FROM campaigns WHERE id = :id', ['id' => $args['campaign']])->fetchAll()) == 0)
-            return notFoundHandler($this, $request, $response);
-        return $this->view->render($response, 'campaign.html.twig', [
-            'campaign'  => $args['campaign'],
-        ]);
+    $this->group('/{campaign}', function() {
+
+        $this->get('', function (Request $request, Response $response, $args) {
+            if (count(
+                runPDO($this->db, 'SELECT id FROM campaigns 
+                    WHERE id = :id
+                    AND keystr = :key', [
+                        'id' => $args['campaign'],
+                        'key'=> $request->getQueryParam('k'),
+                    ])->fetchAll()
+            ) == 0) return notFoundHandler($this, $request, $response);
+            return $this->view->render($response, 'campaign.html.twig', [
+                'campaign'  => $args['campaign'],
+            ]);
+        });
+
+        $this->get('/poll'), (Request $request, Response $response, $args) {
+            if (count(
+                runPDO($this->db, 'SELECT id FROM campaigns 
+                    WHERE id = :id
+                    AND keystr = :key', [
+                        'id' => $args['campaign'],
+                        'key'=> $request->getQueryParam('k'),
+                    ])->fetchAll()
+            ) == 0) return notFoundHandler($this, $request, $response);
+        });
     });
 
+    
 });
 
 $app->post('/twilio/callback', function (Request $request, Response $response) {
@@ -206,7 +231,7 @@ $app->run();
 
 function sendNextText($db, $client, $to) {
    
-    $question = runPDO($db, 'SELECT questions.title, texts.id FROM questions
+    $question = runPDO($db, 'SELECT questions.title, questions.type, texts.id FROM questions
                              INNER JOIN texts ON questions.id = texts.question
                              INNER JOIN textees ON texts.textee = textees.id
                              WHERE textees.phone = :phone
@@ -268,4 +293,14 @@ function getAccessToken($db, $campaign) {
 
 function notFoundHandler($app, $request, $response) {
     return $app->get('notFoundHandler')($request, $response);
+}
+
+function generateKey() {
+    $characters = '0123456789abcdef';
+    $charactersLength = strlen($characters);
+    $randomString = '';
+    for ($i = 0; $i < 44; $i++) {
+        $randomString .= $characters[rand(0, $charactersLength - 1)];
+    }
+    return $randomString;
 }
