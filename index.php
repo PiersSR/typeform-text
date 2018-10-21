@@ -191,6 +191,10 @@ $app->group('/campaign', function() use ($m_accesscontrol) {
         $this->get('', function (Request $request, Response $response, $args) {
             return $this->view->render($response, 'campaign.html.twig', [
                 'campaign'  => $args['campaign'],
+                'questions' => runPDO($this->db, 
+                    'SELECT * FROM questions WHERE campaign = :campaign', 
+                    ['campaign' => $args['campaign']]
+                ),
             ]);
         });
 

@@ -58,6 +58,20 @@ body {
 	}
 }
 
+table {
+	border-collapse: collapse;
+
+	thead {
+		font-weight: 700;
+		border-bottom: 1px solid #ccc;
+	}
+
+	td {
+		border-left: 1px solid #ccc;
+		padding: 5px;
+	}
+}
+
 
 
 

@@ -1,5 +1,62 @@
 {% extends 'page.html.twig' %}
 
+{% block head %}
+	<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+{% endblock %}
+
 {% block content %}
 	<h2>Campaign {{ campaign }}</h2>
+	<table>
+		<thead>
+			<tr>
+				<td>Respondent</td>
+				{% for question in questions %}
+					<td>{{ question.title }}</td>
+				{% endfor %}
+			</tr>
+		</thead>
+		<tbody id="tbody">
+
+		</tbody>
+	</table>
+	<p><a href="/campaign/{{ campaign }}/poll?k={{ _get.k }}">Raw</a></p>
+{% endblock %}
+
+{% block scripts %}
+	<script>
+		$(function() {
+			var data = {};
+  			var interval = 3 * 1000;
+		  	var update = function() {
+			    console.log('Sending AJAX request...');
+			    var url = window.location.href.split('?');
+			    $.ajax({
+			      	type: "GET",
+			      	url: url[0] + '/poll?' + url[1], 
+			    }).done(function(msg) {
+
+			    	$('#tbody').empty();
+			    	var json = JSON.parse(msg);
+			    	$.each(json, function(phone, response) {
+			    		var row = $('<tr/>');
+			    		row.append($('<td/>').html(phone));
+			    		$.each(response, function(i, answer) {
+			    			row.append($('<td/>').html(answer));
+			    		});
+			    		$('#tbody').append(row);
+			    	});
+
+			      	console.log('success');
+			    }).fail(function() {
+			      	console.log('error');
+			    }).always(function() {
+			      	// Schedule the next request after this one completes,
+			      	// even after error
+			      	console.log('Waiting ' + (interval / 1000) + ' seconds');
+			      	setTimeout(update, interval);
+			    });
+			}
+			update();
+		});
+	</script>
 {% endblock %}
