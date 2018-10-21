@@ -161,7 +161,7 @@ $app->group('/campaign', function() use ($m_accesscontrol) {
 
         foreach ($form['fields'] as $field) {
             $id = uniqid();
-            runPDO($this->db, 'INSERT INTO questions VALUES (:id, :title, :type, :campaign)', [
+            runPDO($this->db, 'INSERT INTO questions (id, title, type, campaign) VALUES (:id, :title, :type, :campaign)', [
                 'id'        => $id,
                 'title'     => $field['title'],
                 'type'      => $field['type'],

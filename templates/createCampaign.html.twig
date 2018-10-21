@@ -1,7 +1,7 @@
 {% extends 'page.html.twig' %}
 
 {% block content %}
-	<h1>Hi, {{ campaign.user }}</h1>
+	<h2>Hi, {{ campaign.user }}</h2>
 	<h2>Create new campaign</h2>
 	<form action="/campaign/new" method="post">
 		<input type="hidden" name="campaign" value="{{ campaign.id }}">
