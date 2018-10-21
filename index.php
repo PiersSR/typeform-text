@@ -74,12 +74,11 @@ $container['notFoundHandler'] = function ($c) {
 // middleware
 
 $m_accesscontrol = function ($request, $response, $next) use ($container) {
-    $campaign = 
     if (count(
         runPDO($container['db'], 'SELECT id FROM campaigns 
             WHERE id = :id
             AND keystr = :key', [
-                'id' => explode('/', $request->getUri()->getPath())[1],
+                'id' => explode('/', $request->getUri()->getPath())[2],
                 'key'=> $request->getQueryParam('k'),
             ])->fetchAll()
     ) == 0) return $response->withRedirect('/login');
@@ -123,7 +122,7 @@ $app->group('/login', function() {
     });
 });
 
-$app->group('/campaign', function() {
+$app->group('/campaign', function() use ($m_accesscontrol) {
     
     $this->get('/new', function (Request $request, Response $response) {
         if (empty($request->getQueryParam('c'))) return notFoundHandler($this, $request, $response);
@@ -195,8 +194,9 @@ $app->group('/campaign', function() {
             ]);
         });
 
-        $this->get('/poll'), (Request $request, Response $response, $args) {
+        $this->get('/poll', function (Request $request, Response $response, $args) {
              
+             return;
         });
 
     })->add($m_accesscontrol);
