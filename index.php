@@ -195,8 +195,35 @@ $app->group('/campaign', function() use ($m_accesscontrol) {
         });
 
         $this->get('/poll', function (Request $request, Response $response, $args) {
-             
-             return;
+            $answers = runPDO($this->db, 'SELECT texts.answer, textees.phone, q.id
+                FROM texts
+                INNER JOIN textees on texts.textee = textees.id
+                INNER JOIN questions q on texts.question = q.id
+                INNER JOIN campaigns c on q.campaign = c.id
+                WHERE texts.answer IS NOT NULL
+                AND c.id = :id
+                ORDER BY q.id ASC',
+                ['id' => $args['campaign']]
+            );
+            $data = [];
+            foreach ($answers as $answer) {
+                $data[$answer['phone']][] = $answer['answer'];
+            }
+
+            $nQuestions = count(runPDO(
+                $this->db, 'SELECT id FROM questions WHERE campaign = :campaign', 
+                ['campaign' => $args['campaign']]
+            )->fetchAll());
+
+            $json = $data;
+            foreach ($data as $phone => $answers) {
+                if (count($answers) < $nQuestions) {
+                    unset($json[$phone]);
+                }
+            }
+
+            echo json_encode($json);
+            return;
         });
 
     })->add($m_accesscontrol);
