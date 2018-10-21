@@ -74,13 +74,8 @@ $container['notFoundHandler'] = function ($c) {
 // Routes
 
 $app->get('/', function (Request $request, Response $response) {
-
+    return $response->withRedirect('/login');
 });
-
-$app->get('/send', function (Request $request, Response $response) {
-    sendText($this->twilio);
-});
-
 
 $app->group('/login', function() {
 
@@ -142,7 +137,6 @@ $app->group('/campaign', function() {
                 'id'    => $id,
                 'phone' => $number,
             ];
-            print_r(explode('\n', $post['numbers']));
             runPDO($this->db, 'INSERT INTO textees VALUES (:id, :phone)', [
                 'id'    => $id,
                 'phone' => $number,
@@ -168,10 +162,16 @@ $app->group('/campaign', function() {
         }
 
         foreach ($textees as $textee) {
-            sendText($this->twilio, $textee['phone']);
+            sendText($this->db, $this->twilio, $textee['phone']);
         }
 
-        return $response->withStatus(200);
+        return $response->withRedirect('/campaign/' . $post['campaign']);
+    });
+
+    $this->get('/{campaign}', function (Request $request, Response $response, $args) {
+        return $this->view->render($response, 'campaign.html.twig', [
+            'campaign'  => $args['campaign'],
+        ]);
     });
 
 });
@@ -183,44 +183,50 @@ $app->post('/twilio/callback', function (Request $request, Response $response) {
         ['from' => $post['From']]
     )->fetchColumn();
 
-    if (!$textee == false) return notFoundHandler($this, $request, $response);
+    if (!$textee) return notFoundHandler($this, $request, $response);
 
-    $result = runPDO($this->db, 'UPDATE texts SET answer WHERE texts.textee = :textee', [
-        'textee' => $textee]);
+    $result = runPDO($this->db, 'UPDATE texts SET answer = :answer 
+        WHERE texts.textee = :textee 
+        AND answer IS NULL
+        ORDER BY texts.id ASC
+        LIMIT 1', [
+            'textee'    => $textee,
+            'answer'    => $post['Body'],
+        ]
+    );
 
-    sendText($this->twilio, $post['From']);
+    sendText($this->db, $this->twilio, $post['From']);
 
-
+    return $response->withStatus(200);
 });
 
 $app->run();
 
-function sendText($client, $to) {
-    $twilioNumber = "+447449537878";
-    
-    $client->messages->create(  
-        [
-            'to'   => '+447759945447',
-            'from' => 'typeform-text',
-            'body' => $question
-        ]   
+function sendText($db, $client, $to) {
+   
+    $question = runPDO($db, 'SELECT questions.title, texts.id FROM questions
+                             INNER JOIN texts ON questions.id = texts.question
+                             INNER JOIN textees ON texts.textee = textees.id
+                             WHERE textees.phone = :phone
+                             AND texts.sent = 0', 
+                             ['phone' => $to]
+                         )->fetchAll();
+
+    if (count($question) == 0) return;
+    $question = $question[0];
+
+    $twilioNumber = '+447449537878';
+
+    $client->messages->create(
+        $to, [
+            'from' => $twilioNumber,
+            'body' => $question['title'],
+        ]
     );
-    
-    $sent = runPDO($db, 'SELECT texts.sent FROM texts');   
-    
-    if (!$sent) {
-        $question = runPDO($db, 'SELECT question.title FROM questions
-                                 INNER JOIN texts ON questions.id = texts.question
-                                 INNER JOIN textees ON texts.textee = textees.id
-                                 WHERE textees.phone = :from', 
-                                 ['from' => $from]
-                             )->fetchColumn();
         
-        runPDO($db, 'UPDATE texts SET sent = 1 WHERE textees.phone = :from', [
-                    'from' => $from
-                ]);
-    }
+    runPDO($db, 'UPDATE texts SET sent = 1 WHERE id = :id', ['id' => $question['id']]);
 }
+
 
 function performRequest($url, $data, $headers, $method) {
     $options = array(
@@ -248,4 +254,12 @@ function runPDO($db, $sql, $params = null) {
     $q = $db->prepare($sql);
     $q->execute($params);
     return $q;
+}
+
+function getAccessToken($db, $campaign) {
+    return runPDO($db, 'SELECT token FROM campaigns WHERE id = :id', ['id' => $campaign])->fetchColumn();
+}
+
+function notFoundHandler($app, $request, $response) {
+    return $app->get('notFoundHandler')($request, $response);
 }
