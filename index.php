@@ -13,7 +13,7 @@ spl_autoload_register(function ($class) {
 
 // setup Slim
 
-$config['displayErrorDetails'] = true;
+// $config['displayErrorDetails'] = true;
 $config['addContentLengthHeader'] = false;
 
 $app = new Slim\App(['settings' => $config]);
