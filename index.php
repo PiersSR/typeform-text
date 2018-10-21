@@ -71,6 +71,21 @@ $container['notFoundHandler'] = function ($c) {
     };
 };
 
+// middleware
+
+$m_accesscontrol = function ($request, $response, $next) use ($container) {
+    $campaign = 
+    if (count(
+        runPDO($container['db'], 'SELECT id FROM campaigns 
+            WHERE id = :id
+            AND keystr = :key', [
+                'id' => explode('/', $request->getUri()->getPath())[1],
+                'key'=> $request->getQueryParam('k'),
+            ])->fetchAll()
+    ) == 0) return $response->withRedirect('/login');
+    return $next($request, $response);
+};
+
 // Routes
 
 $app->get('/', function (Request $request, Response $response) {
@@ -175,30 +190,16 @@ $app->group('/campaign', function() {
     $this->group('/{campaign}', function() {
 
         $this->get('', function (Request $request, Response $response, $args) {
-            if (count(
-                runPDO($this->db, 'SELECT id FROM campaigns 
-                    WHERE id = :id
-                    AND keystr = :key', [
-                        'id' => $args['campaign'],
-                        'key'=> $request->getQueryParam('k'),
-                    ])->fetchAll()
-            ) == 0) return notFoundHandler($this, $request, $response);
             return $this->view->render($response, 'campaign.html.twig', [
                 'campaign'  => $args['campaign'],
             ]);
         });
 
         $this->get('/poll'), (Request $request, Response $response, $args) {
-            if (count(
-                runPDO($this->db, 'SELECT id FROM campaigns 
-                    WHERE id = :id
-                    AND keystr = :key', [
-                        'id' => $args['campaign'],
-                        'key'=> $request->getQueryParam('k'),
-                    ])->fetchAll()
-            ) == 0) return notFoundHandler($this, $request, $response);
+             
         });
-    });
+
+    })->add($m_accesscontrol);
 
     
 });
