@@ -169,6 +169,8 @@ $app->group('/campaign', function() {
     });
 
     $this->get('/{campaign}', function (Request $request, Response $response, $args) {
+        if (count(runPDO($this->db, 'SELECT id FROM campaigns WHERE id = :id', ['id' => $args['campaign']])->fetchAll()) == 0)
+            return notFoundHandler($this, $request, $response);
         return $this->view->render($response, 'campaign.html.twig', [
             'campaign'  => $args['campaign'],
         ]);
