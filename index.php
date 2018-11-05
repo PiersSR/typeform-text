@@ -140,10 +140,13 @@ $app->group('/campaign', function() use ($m_accesscontrol) {
         
         $form = requestAPI('/forms/' . $post['form'], [], getAccessToken($this->db, $post['campaign']));
         $key = generateKey();
-        runPDO($this->db, 'UPDATE campaigns SET title = :title, keystr = :key WHERE id = :id', [
-            'title' => $form['title'],
-            'key'   => $key,
-            'id'    => $post['campaign'],
+        $formUrl = empty($post['form_url']) ? $form['_links']['display'] : $post['form_url'];
+
+        runPDO($this->db, 'UPDATE campaigns SET title = :title, keystr = :key, form_url = :form_url WHERE id = :id', [
+            'title'     => $form['title'],
+            'key'       => $key,
+            'id'        => $post['campaign'],
+            'form_url'  => $formUrl,
         ]);
 
         $numbers = [];
@@ -179,7 +182,7 @@ $app->group('/campaign', function() use ($m_accesscontrol) {
 
         foreach ($textees as $textee) {
             sendText($this->twilio, $textee['phone'], 'Hey there! Mind answering a few questions? This survey\'s called ' . $form['title'] . '. If you\'d rather not, just don\'t reply to the first question - we won\'t bother you again. :)');
-            sendText($this->twilio, $textee['phone'], 'You can also complete this survey online: ' . $form['_links']['display']);
+            sendText($this->twilio, $textee['phone'], 'You can also complete this survey online: ' . $formUrl);
             sendNextText($this->db, $this->twilio, $textee['phone']);
         }
 
