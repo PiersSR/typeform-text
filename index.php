@@ -157,8 +157,9 @@ $app->group('/campaign', function() use ($m_accesscontrol) {
                 'phone' => $number,
             ];
             runPDO($this->db, 'INSERT INTO textees VALUES (:id, :phone)', [
-                'id'    => $id,
-                'phone' => $number,
+                'id'        => $id,
+                'campaign'  => $post['campaign'],
+                'phone'     => $number,
             ]);
         }
 
@@ -182,7 +183,7 @@ $app->group('/campaign', function() use ($m_accesscontrol) {
 
         foreach ($textees as $textee) {
             sendText($this->twilio, $textee['phone'], 'Hey there! Mind answering a few questions? This survey\'s called ' . $form['title'] . '. If you\'d rather not, just don\'t reply to the first question - we won\'t bother you again. :)');
-            sendText($this->twilio, $textee['phone'], 'You can also complete this survey online: ' . $formUrl);
+            sendText($this->twilio, $textee['phone'], 'You can also complete this survey online: ' . $formUrl . '?tid=' . $textee['id']);
             sendNextText($this->db, $this->twilio, $textee['phone']);
         }
 
