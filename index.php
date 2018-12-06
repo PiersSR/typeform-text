@@ -156,7 +156,7 @@ $app->group('/campaign', function() use ($m_accesscontrol) {
                 'id'    => $id,
                 'phone' => $number,
             ];
-            runPDO($this->db, 'INSERT INTO textees VALUES (:id, :phone)', [
+            runPDO($this->db, 'INSERT INTO textees VALUES (:id, :campaign, :phone)', [
                 'id'        => $id,
                 'campaign'  => $post['campaign'],
                 'phone'     => $number,
